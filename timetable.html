@@ -252,77 +252,94 @@
         return false;
     }
     function dragDrop(ev) {
-		ev.stopPropagation();
-		ev.dataTransfer.effectAllowed = 'move';
-		var src = ev.dataTransfer.getData("text");
-		var x = document.getElementById(src);
-        srcCI = x.cellIndex + 1;
-        tarCI = ev.target.cellIndex + 1;
-		console.log(x.cellIndex);
-		console.log(ev);
+    ev.stopPropagation();
+    ev.preventDefault();
+    ev.dataTransfer.effectAllowed = 'move';
+    
+    var src = ev.dataTransfer.getData("text");
+    var x = document.getElementById(src);
+    var srcColIndex = x.cellIndex;
+    var srcRowIndex = x.parentElement.rowIndex;
+    var targetColIndex = ev.target.cellIndex;
+    var targetRowIndex = ev.target.parentElement.rowIndex;
+    var targetCell = ev.target;
+    var targetCellIsDouble = targetCell.colSpan == 2;
+    var targetCellId = targetCell.id;
 
-        if (x.width < 200 && ev.target.width < 200) {
-            console.log(ev.target.innerHTML);
-            x.id = ev.target.id;
-            x.innerHTML = ev.target.innerHTML;
-            ev.target.innerHTML = src;
-            ev.target.id = src;
-            ev.target.colspan = 1;
-            x.colSpan = 1;
-        } else if (x.width == 248 && ev.target.width == 248) {
-            console.log(ev.target.innerHTML);
-            x.id = ev.target.id;
-            x.innerHTML = ev.target.innerHTML;
-            ev.target.innerHTML = src;
-            ev.target.id = src;
-            console.log(ev);
-            console.log(ev.target.id)
-        } else if (ev.target.cellIndex == 1) {
-			alert("Cannot place this lesson just before a break or trying to move a double lesson to an invalid place")
-			return false;
-        } else if (ev.target.cellIndex == 4) {
-            alert("Cannot place this lesson just before a break or trying to move a double lesson to an invalid place")
-			return false;
-        } else if (ev.target.cellIndex == 8 || x.cellIndex == 8) {
-            alert("Cannot place this lesson just before a break or trying to move a double lesson to an invalid place")
-			return false;
-        } else if (ev.target.cellIndex == 11 || x.cellIndex == 11) {
-            alert("Cannot place this lesson just before a break or trying to move a double lesson to an invalid place")
-            return false;
-        }else if (x.width == 248 && ev.target.width < 200 ) {
+    // Check if source and target are both doubles
+    if (x.colSpan == 2 && targetCellIsDouble) {
+        // Swap the lessons in both double cells
+        var temp = x.innerHTML;
+        x.innerHTML = targetCell.innerHTML;
+        targetCell.innerHTML = temp;
+    } else {
+        // Swap a double lesson with a single lesson
+        if (x.colSpan == 2 || targetCellIsDouble) {
+            // Find the adjacent cell with a matching row index and opposite colspan
+            var adjacentCell;
+            if (srcColIndex < targetColIndex) {
+                adjacentCell = targetCell.previousElementSibling;
+            } else {
+                adjacentCell = targetCell.nextElementSibling;
+            }
+            while (adjacentCell && !(adjacentCell.parentElement.rowIndex == srcRowIndex && adjacentCell.colSpan != x.colSpan)) {
+                if (srcColIndex < targetColIndex) {
+                    adjacentCell = adjacentCell.previousElementSibling;
+                } else {
+                    adjacentCell = adjacentCell.nextElementSibling;
+                }
+            }
+            
+            if (adjacentCell) {
+                // Swap the lessons in both cells
+                var temp = x.innerHTML;
+                x.innerHTML = targetCell.innerHTML;
+                targetCell.innerHTML = temp;
+                
+                var adjacentCellIsDouble = adjacentCell.colSpan == 2;
+                if (adjacentCellIsDouble) {
+                    var temp2 = adjacentCell.innerHTML;
+                    adjacentCell.innerHTML = x.innerHTML;
+                    x.innerHTML = temp2;
+                } else {
+                    adjacentCell.innerHTML = x.innerHTML;
+                }
+                
+                // Update cell IDs to reflect new content
+                x.id = targetCellId;
+                targetCell.id = src;
+                adjacentCell.id = targetCellId + "-adj";
+                
+                // Update colspans and widths
+                x.colSpan = targetCellIsDouble ? 2 : 1;
+                targetCell.colSpan = x.colSpan;
+                adjacentCell.colSpan = targetCellIsDouble ? 1 : 2;
+                x.width = targetCellIsDouble ? 248 : 124;
+                targetCell.width = x.width;
+                adjacentCell.width = targetCellIsDouble ? 124 : 248;
+            } else {
+                alert("Cannot move double lesson to an invalid place");
+            }
+        } else {
+            // Swap two single lessons
+            var temp = x.innerHTML;
+            x.innerHTML = targetCell.innerHTML;
+            targetCell.innerHTML = temp;
 
-			var mvname = ev.target.parentElement.cells[tarCI];
-			var mvnameid = mvname.id
-			var z = document.getElementById(mvnameid);
-			x.id = ev.target.id;
-			x.innerHTML = ev.target.innerHTML;
-			ev.target.innerHTML = src;
-			ev.target.id = src;
-			ev.target.colSpan = 2;
-			x.colSpan = 1;
-			x.width = 124;
-			ev.target.width = 248;
-			x.insertAdjacentElement("afterend", z);
-		} else if (x.width < 200 && ev.target.width == 248 && (ev.target.cellIndex !== 1 || ev.target.cellIndex !== 4 || ev.target.cellIndex !== 8 || ev.target.cellIndex !== 11)) {
+            // Update cell IDs to reflect new content
+            x.id = targetCellId;
+            targetCell.id = src;
 
-			var mvname = ev.target.parentElement.cells[srcCI];
-			var mvnameid = mvname.id
-			var z = document.getElementById(mvnameid);
-			x.id = ev.target.id;
-			x.innerHTML = ev.target.innerHTML;
-			ev.target.innerHTML = src;
-			ev.target.id = src;
-			ev.target.colSpan = 1;
-			ev.target.width = 124;
-			x.colSpan = 2;
-			x.width = 248;
-			ev.target.insertAdjacentElement("afterend", z);
-		}
-
-        return false;
-		
+            // Update colspans and widths
+            x.colSpan = targetCellIsDouble ? 2 : 1;
+            targetCell.colSpan = x.colSpan;
+            x.width = targetCellIsDouble ? 248 : 124;
+            targetCell.width = x.width;
+        }
     }
-
+    
+    return false;
+}
 </script>
 
 </head>
